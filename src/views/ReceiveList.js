@@ -30,8 +30,10 @@ class ReceiveList extends Component {
 
   getAllStockData = () => {
     axios
-      .get(`https://4q931ru18g.execute-api.ap-south-1.amazonaws.com/test/api/received/${this.props.activeSiteId}`,
-      { headers: { 'Authorization': localStorage.getItem("token") }})
+      .get(
+        `https://4q931ru18g.execute-api.ap-south-1.amazonaws.com/test/api/received/${this.props.activeSiteId}`,
+        { headers: { Authorization: localStorage.getItem("token") } }
+      )
       .then((response) => {
         if (response.status == 200) {
           console.log("testtt", response);
@@ -50,28 +52,42 @@ class ReceiveList extends Component {
 
   verifyOrder = (id) => {
     let data = this.state.currentOrders[id];
-    console.log("data",this.state.currentOrders[id])
+    console.log("data", this.state.currentOrders[id]);
     axios
-    .put(`https://4q931ru18g.execute-api.ap-south-1.amazonaws.com/test/api/verify`, data,
-    { headers: { 'Authorization': localStorage.getItem("token") }})
-    .then((response) => {
-      if (response.status == 200) {
-        this.getAllStockData();
-      } else if (response.status == 403) {
-        localStorage.clear();
-      }
-    })
-    .catch((error) => {
-      this.setState({ errorMessage: error.message });
-    });
-  }
+      .put(
+        `https://4q931ru18g.execute-api.ap-south-1.amazonaws.com/test/api/verify`,
+        data,
+        { headers: { Authorization: localStorage.getItem("token") } }
+      )
+      .then((response) => {
+        if (response.status == 200) {
+          this.getAllStockData();
+        } else if (response.status == 403) {
+          localStorage.clear();
+        }
+      })
+      .catch((error) => {
+        this.setState({ errorMessage: error.message });
+      });
+  };
 
   render() {
     return (
       <>
         <Container fluid>
-          {this.state.currentOrders &&
-            this.state.currentOrders.length > 0 ?
+          {this.props.activeSiteId !== "" && (
+            <div style={{ marginBottom: "10px" }}>
+              <Button
+                className="btn-fill pull-right"
+                type="submit"
+                variant="secondary"
+                onClick={this.props.changeTableOrder}
+              >
+                Back to Current Stock
+              </Button>
+            </div>
+          )}
+          {this.state.currentOrders && this.state.currentOrders.length > 0 ? (
             this.state.currentOrders.map((item, index) => {
               return (
                 <Row>
@@ -164,14 +180,14 @@ class ReceiveList extends Component {
                           </tbody>
                         </Table>
                         <div class="col-auto">
-                        <Button
-                          className="btn-fill pull-right"
-                          type="submit"
-                          variant="primary"
-                          onClick={() => this.verifyOrder(index)}
-                        >
-                          Verify
-                        </Button>
+                          <Button
+                            className="btn-fill pull-right"
+                            type="submit"
+                            variant="primary"
+                            onClick={() => this.verifyOrder(index)}
+                          >
+                            Verify
+                          </Button>
                         </div>
                       </Card.Footer>
                     </Card>
@@ -179,9 +195,9 @@ class ReceiveList extends Component {
                 </Row>
               );
             })
-          :
-           <h3 style={{ textAlign: "center" }}>No receive orders found</h3>
-          }
+          ) : (
+            <h3 style={{ textAlign: "center" }}>No receive orders found</h3>
+          )}
         </Container>
       </>
     );

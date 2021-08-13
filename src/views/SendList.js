@@ -24,7 +24,7 @@ class SendList extends Component {
       vehicleNo: "",
       driverDL: "",
       toSite: "",
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toISOString().split("T")[0],
       addItem: [{ item: "", dimension: "", qty: "" }],
     };
   }
@@ -121,25 +121,29 @@ class SendList extends Component {
   };
 
   saveSendOrder = () => {
-    let items = this.state.addItem.map(data => {
-      return(
-        {"StockId": this.state.currentStocks[data.item].stockId[data.dimension], "qty" : data.qty}
-      )
-    })
+    let items = this.state.addItem.map((data) => {
+      return {
+        StockId: this.state.currentStocks[data.item].stockId[data.dimension],
+        qty: data.qty,
+      };
+    });
     const data = {
       fromSiteId: this.props.activeSiteId,
       toSiteId: this.state.toSite,
       vehicleNo: this.state.vehicleNo,
       driverDL: this.state.driverDL,
       date: this.state.date,
-      items: items
+      items: items,
     };
     axios
-      .post(`https://4q931ru18g.execute-api.ap-south-1.amazonaws.com/test/api/send`, data,
-      { headers: { 'Authorization': localStorage.getItem("token") }})
+      .post(
+        `https://4q931ru18g.execute-api.ap-south-1.amazonaws.com/test/api/send`,
+        data,
+        { headers: { Authorization: localStorage.getItem("token") } }
+      )
       .then((response) => {
         if (response.status == 200) {
-          this.props.changeSite(this.state.toSite);
+          this.props.changeTableOrder();
         } else if (response.status == 403) {
           localStorage.clear();
         }
@@ -147,12 +151,24 @@ class SendList extends Component {
       .catch((error) => {
         this.setState({ errorMessage: error.message });
       });
-  }
+  };
 
   render() {
     return (
       <>
         <Container fluid>
+          {this.props.activeSiteId !== "" && (
+            <div style={{ marginBottom: "10px" }}>
+              <Button
+                className="btn-fill pull-right"
+                type="submit"
+                variant="secondary"
+                onClick={this.props.changeTableOrder}
+              >
+                Back to Current Stock
+              </Button>
+            </div>
+          )}
           <Row>
             <Col md="12">
               <Card>
@@ -375,7 +391,11 @@ class SendList extends Component {
             </Modal.Title>
           </Modal.Header>
           <Modal.Footer>
-            <Button variant="primary" type="submit" onClick={this.saveSendOrder}>
+            <Button
+              variant="primary"
+              type="submit"
+              onClick={this.saveSendOrder}
+            >
               Yes, I want to send
             </Button>
             <Button
