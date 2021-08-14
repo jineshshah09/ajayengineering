@@ -14,6 +14,8 @@ import {
 } from "react-bootstrap";
 import axios from "axios";
 import Background from "../../src/assets/img/sidebar-4.jpg";
+import ajayLogo from 'assets/img/ajaylogo.png';
+
 
 class Login extends Component {
   constructor(props) {
@@ -41,11 +43,10 @@ class Login extends Component {
           localStorage.setItem("token", response.data.token);
           window.location.replace("/admin/dashboard");
           // this.props.history.push('/admin/dashboard');
-        } else if (response.status == 403) {
-          localStorage.clear();
         }
       })
       .catch((error) => {
+        localStorage.clear();
         this.setState({ errorMessage: error.message });
         console.error("There was an error!", error);
       });
@@ -59,12 +60,16 @@ class Login extends Component {
 
   render() {
     return (
-      <div>
+      <div style={{ backgroundColor: "aliceblue" }}>
         <div className="wrapper loginform">
           <Row>
             <Col md="12">
               <Card>
                 <Card.Body>
+                <div className="logo-login">
+            {/* <p className="simple-text">Welcome User!!</p> */}
+            <img src={ajayLogo} alt="Welcome User"/>
+          </div>
                   <Row>
                     <Col md="12">
                       <Form.Group>
@@ -91,6 +96,9 @@ class Login extends Component {
                       </Form.Group>
                     </Col>
                   </Row>
+                  {this.state.errorMessage && this.state.errorMessage !== "" &&
+                  <p style={{ textAlign : "center" }} className="text-danger">Invalid Username or Password</p>
+                  }
                   <div style={{ textAlign : "center" }}>
                   <Button
                     className="login-button"

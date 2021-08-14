@@ -75,6 +75,7 @@ class ReceiveList extends Component {
     return (
       <>
         <Container fluid>
+          <br />
           {this.props.activeSiteId !== "" && (
             <div style={{ marginBottom: "10px" }}>
               <Button

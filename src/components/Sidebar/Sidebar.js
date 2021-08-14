@@ -4,6 +4,7 @@ import { withRouter } from "react-router-dom";
 import { Nav, Button, Form, Modal } from "react-bootstrap";
 
 import logo from "assets/img/reactlogo.png";
+import ajayLogo from 'assets/img/ajaylogo.png';
 import axios from "axios";
 
 class Sidebar extends Component {
@@ -92,7 +93,8 @@ class Sidebar extends Component {
         />
         <div className="sidebar-wrapper">
           <div className="logo d-flex align-items-center justify-content-start">
-            <p className="simple-text">Welcome User!!</p>
+            {/* <p className="simple-text">Welcome User!!</p> */}
+            <img src={ajayLogo} alt="Welcome User"/>
           </div>
           {/* <ul style={{ listStyleType: "none" }}>
             {this.props.routes.map((prop, key) => {
@@ -132,6 +134,7 @@ class Sidebar extends Component {
               listStyleType: "none",
               paddingLeft: "15px",
               paddingRight: "15px",
+              paddingTop: "10px",
             }}
           >
             {this.props.siteList &&

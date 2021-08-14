@@ -54,6 +54,7 @@ class PurchaseOrderList extends Component {
     return (
       <>
         <Container fluid>
+          <br />
           {this.props.activeSiteId !== "" && (
             <div style={{ marginBottom: "10px" }}>
               <Button
@@ -84,6 +85,7 @@ class PurchaseOrderList extends Component {
                         <th className="border-0">Amount</th>
                         <th className="border-0">Remark</th>
                         <th className="border-0">Date</th>
+                        <th className="border-0">File</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -100,6 +102,18 @@ class PurchaseOrderList extends Component {
                               <td>{item.amount}</td>
                               <td>{item.remark}</td>
                               <td>{item.date}</td>
+                              <td>
+                                {item.fileUploadUrl ? (
+                                  <a
+                                    href={`https://anujeng-assets.s3.ap-south-1.amazonaws.com/${item.fileUploadUrl}`}
+                                    target="_blank"
+                                  >
+                                    View File
+                                  </a>
+                                ) : (
+                                  <>-</>
+                                )}
+                              </td>
                             </tr>
                           );
                         })}

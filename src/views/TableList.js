@@ -35,12 +35,29 @@ class TableList extends Component {
       Address: "",
       date: new Date().toISOString().split("T")[0],
       amount: "",
+      itemImage: null,
+      orderFile: null,
     };
   }
 
-  componentDidMount = () => {
+  componentDidMount = async () => {
     if (this.props.activeSiteId !== "") {
       this.getAllStockData(this.props.activeSiteId);
+    }
+  };
+
+  uploadFiletoS3 = async (res) => {
+    if (res.imageUploadUrl) {
+      const result = await fetch(res.imageUploadUrl, {
+        method: "PUT",
+        body: this.state.itemImage,
+      });
+    }
+    if (res.fileUploadUrl) {
+      const result = await fetch(res.fileUploadUrl, {
+        method: "PUT",
+        body: this.state.orderFile,
+      });
     }
   };
 
@@ -58,7 +75,6 @@ class TableList extends Component {
       )
       .then((response) => {
         if (response.status == 200) {
-          console.log("testtt", response);
           this.setState({
             currentItems: response.data,
           });
@@ -94,10 +110,13 @@ class TableList extends Component {
       remark: "",
       date: new Date().toISOString().split("T")[0],
       amount: "",
+      itemImage: null,
+      orderFile: null,
     });
   };
 
-  addProductInStock = () => {
+  addProductInStock = async () => {
+    console.log("this.state.itemImage",this.state.itemImage)
     const data = {
       item: this.state.item,
       dimension: this.state.dimension,
@@ -108,15 +127,16 @@ class TableList extends Component {
       date: this.state.date,
       amount: this.state.amount,
       SiteId: this.props.activeSiteId,
+      isImage: this.state.itemImage ? true : false,
+      isFile: this.state.orderFile ? true : false,
     };
     axios
-      .post(
-        `https://4q931ru18g.execute-api.ap-south-1.amazonaws.com/test/api/stock`,
-        data,
-        { headers: { Authorization: localStorage.getItem("token") } }
-      )
-      .then((response) => {
+      .post(`https://4q931ru18g.execute-api.ap-south-1.amazonaws.com/test/api/stock`, data, {
+        headers: { Authorization: localStorage.getItem("token") },
+      })
+      .then(async (response) => {
         if (response.status == 200) {
+          await this.uploadFiletoS3(response.data);
           this.setState({
             addNewItem: false,
             item: "",
@@ -127,6 +147,8 @@ class TableList extends Component {
             remark: "",
             date: new Date().toISOString().split("T")[0],
             amount: "",
+            itemImage: null,
+            orderFile: null,
           });
           this.getAllStockData(this.props.activeSiteId);
         } else if (response.status == 403) {
@@ -145,10 +167,37 @@ class TableList extends Component {
     });
   };
 
+  handleAttachChangeImage = (e) => {
+    var file = e.target.files[0];
+    var reader = new FileReader();
+    let self = this;
+    reader.onload = function (event) {
+      console.log(event.target.result);
+      self.setState({
+        itemImage: event.target.result,
+      });
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  handleAttachChangeFile = (e) => {
+    var file = e.target.files[0];
+    var reader = new FileReader();
+    let self = this;
+    reader.onload = function (event) {
+      console.log(event.target.result);
+      self.setState({
+        orderFile: event.target.result,
+      });
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
   render() {
     return (
       <>
         <Container fluid>
+          <br />
           {this.props.activeSiteId !== "" && (
             <div style={{ marginBottom: "10px" }}>
               <Button
@@ -270,9 +319,8 @@ class TableList extends Component {
                         </Form.Group>
                       </Col>
                     </Row>
-
                     <Row>
-                      <Col className="pr-1" md="4">
+                      <Col className="pr-1" md="3">
                         <Form.Group>
                           <label>Amount</label>
                           <Form.Control
@@ -284,7 +332,7 @@ class TableList extends Component {
                           ></Form.Control>
                         </Form.Group>
                       </Col>
-                      <Col className="pl-1" md="4">
+                      <Col className="pl-1" md="3">
                         <Form.Group>
                           <label>Date</label>
                           <Form.Control
@@ -293,6 +341,28 @@ class TableList extends Component {
                             name="date"
                             value={this.state.date}
                             onChange={this.handleChange}
+                          ></Form.Control>
+                        </Form.Group>
+                      </Col>
+                      <Col className="pr-1" md="3">
+                        <Form.Group>
+                          <label>Item Image</label>
+                          <Form.Control
+                            placeholder="Upload Item Image"
+                            type="file"
+                            name="itemImage"
+                            onChange={this.handleAttachChangeImage}
+                          ></Form.Control>
+                        </Form.Group>
+                      </Col>
+                      <Col className="pr-1" md="3">
+                        <Form.Group>
+                          <label>PurchaseOrder File (pdf)</label>
+                          <Form.Control
+                            placeholder="Upload File"
+                            type="file"
+                            name="orderFile"
+                            onChange={this.handleAttachChangeFile}
                           ></Form.Control>
                         </Form.Group>
                       </Col>
@@ -346,6 +416,7 @@ class TableList extends Component {
                         <th className="border-0">Description</th>
                         <th className="border-0">Qty.</th>
                         <th className="border-0">Remark</th>
+                        <th className="border-0">Item Image</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -360,6 +431,18 @@ class TableList extends Component {
                               <td>{item.description}</td>
                               <td>{item.qty}</td>
                               <td>{item.remark && item.remark}</td>
+                              <td>
+                                {item.imageUploadUrl ? (
+                                  <a
+                                    href={`https://anujeng-assets.s3.ap-south-1.amazonaws.com/${item.imageUploadUrl}`}
+                                    target="_blank"
+                                  >
+                                    View Image
+                                  </a>
+                                ) : (
+                                  <>-</>
+                                )}
+                              </td>
                             </tr>
                           );
                         })}

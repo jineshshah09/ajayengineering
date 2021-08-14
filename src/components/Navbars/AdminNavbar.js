@@ -18,6 +18,7 @@
 import React, { Component } from "react";
 import { useLocation, useHistory } from "react-router-dom";
 import { Navbar, Container, Nav, Dropdown, Button } from "react-bootstrap";
+import ajayLogo from '../../assets/img/ajaylogo.png';
 
 import routes from "routes.js";
 
@@ -52,6 +53,7 @@ function Header() {
           >
             <i className="fas fa-ellipsis-v"></i>
           </Button>
+          {/* <img src={ajayLogo} alt=""/> */}
           <Navbar.Brand
             href="#home"
             onClick={(e) => e.preventDefault()}

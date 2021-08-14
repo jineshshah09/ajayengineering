@@ -88,9 +88,15 @@
   max-height: 700px;
   width: 30%;
   height: 60%;
-  margin: 100px auto;
   border-radius: 25px;
   top: "200px";
+  padding-top: 10%;
+  left: 35%;
+}
+
+.logo-login{
+  text-align: center;
+  margin-bottom: 25px;
 }
 
 .login-button{
