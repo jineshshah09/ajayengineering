@@ -434,7 +434,7 @@ class TableList extends Component {
                               <td>
                                 {item.imageUploadUrl ? (
                                   <a
-                                    href={`https://anujeng-assets.s3.ap-south-1.amazonaws.com/${item.imageUploadUrl}`}
+                                    href={`https://ajayeng-assets.s3.ap-south-1.amazonaws.com/${item.imageUploadUrl}`}
                                     target="_blank"
                                   >
                                     View Image
