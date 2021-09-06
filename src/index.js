@@ -28,6 +28,8 @@ import "@fortawesome/fontawesome-free/css/all.min.css";
 
 import AdminLayout from "layouts/Admin.js";
 import Login from "layouts/Login.js";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const checkValidToken = () => {
   const token = localStorage.getItem('token');

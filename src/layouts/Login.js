@@ -15,6 +15,9 @@ import {
 import axios from "axios";
 import Background from "../../src/assets/img/sidebar-4.jpg";
 import ajayLogo from 'assets/img/ajaylogo.png';
+import { REACT_API_ENDPOINT } from '../configUrl';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 
 class Login extends Component {
@@ -35,20 +38,22 @@ class Login extends Component {
     };
     axios
       .post(
-        `https://4q931ru18g.execute-api.ap-south-1.amazonaws.com/test/user/login`,
+        `${REACT_API_ENDPOINT}/user/login`,
         loginData
       )
       .then((response) => {
         if (response.status == 200) {
+          toast.success(response.data.message);
+          console.log("Login successfully!!")
           localStorage.setItem("token", response.data.token);
           window.location.replace("/admin/dashboard");
           // this.props.history.push('/admin/dashboard');
         }
       })
       .catch((error) => {
+        toast.error(error.response.data.message);
+        // this.setState({ errorMessage: error.message });
         localStorage.clear();
-        this.setState({ errorMessage: error.message });
-        console.error("There was an error!", error);
       });
   };
 
@@ -117,6 +122,7 @@ class Login extends Component {
             </Col>
           </Row>
         </div>
+        <ToastContainer />
       </div>
     );
   }

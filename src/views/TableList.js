@@ -15,6 +15,11 @@ import {
   Form,
   Modal,
 } from "react-bootstrap";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import DeleteIcon from "@material-ui/icons/Delete";
+import EditIcon from "@material-ui/icons/Edit";
+import { REACT_API_ENDPOINT } from "../configUrl";
 
 class TableList extends Component {
   constructor(props) {
@@ -35,8 +40,15 @@ class TableList extends Component {
       Address: "",
       date: new Date().toISOString().split("T")[0],
       amount: "",
+      editSiteId: "",
+      deleteSiteId: "",
+      itemImageType: "",
+      orderFileType: "",
       itemImage: null,
       orderFile: null,
+      typeOfModal: "",
+      openModal: false,
+      password: "",
     };
   }
 
@@ -69,10 +81,9 @@ class TableList extends Component {
 
   getAllStockData = (id) => {
     axios
-      .get(
-        `https://4q931ru18g.execute-api.ap-south-1.amazonaws.com/test/api/stock/${id}`,
-        { headers: { Authorization: localStorage.getItem("token") } }
-      )
+      .get(`${REACT_API_ENDPOINT}/api/stock/${id}`, {
+        headers: { Authorization: localStorage.getItem("token") },
+      })
       .then((response) => {
         if (response.status == 200) {
           this.setState({
@@ -83,12 +94,18 @@ class TableList extends Component {
               activeSiteId: response.data[0].id,
             });
           }
-        } else if (response.status == 403) {
-          localStorage.clear();
         }
       })
       .catch((error) => {
-        this.setState({ errorMessage: error.message });
+        // if (error.response.status == 401) {
+        //   localStorage.clear();
+        //   window.location.replace("/admin/login");
+        // } else if (
+        //   error.response.status == 403 &&
+        //   error.response?.data?.message
+        // ) {
+        //   toast.error(error.response.data.message);
+        // } else toast.error("Error while fetching stock");
         console.error("There was an error!", error);
       });
   };
@@ -110,13 +127,104 @@ class TableList extends Component {
       remark: "",
       date: new Date().toISOString().split("T")[0],
       amount: "",
+      editSiteId: "",
+      itemImageType: "",
+      orderFileType: "",
       itemImage: null,
       orderFile: null,
     });
   };
 
+  deleteProductInStock = async (id) => {
+    const data = {
+      password: this.state.password,
+    };
+    axios
+      .delete(`${REACT_API_ENDPOINT}/api/stock/${id}`, data, {
+        headers: { Authorization: localStorage.getItem("token") },
+      })
+      .then(async (response) => {
+        if (response.status == 200) {
+          toast.success("Item deleted successfully!!");
+          this.handleModalClose();
+          this.getAllStockData(this.props.activeSiteId);
+        }
+      })
+      .catch((error) => {
+        if (error.response.status == 401) {
+          localStorage.clear();
+          window.location.replace("/admin/login");
+        } else if (
+          error.response.status == 403 &&
+          error.response?.data?.message
+        ) {
+          toast.error(error.response.data.message);
+        } else toast.error("Error while deleting item");
+        console.error("There was an error!", error);
+      });
+  };
+
+  editItem = (id) => {
+    var data = this.state.currentItems.filter(
+      (item) => parseInt(item.id) == parseInt(id)
+    );
+
+    this.setState({
+      editSiteId: id,
+      item: data[0].item,
+      dimension: data[0].dimension,
+      description: data[0].description,
+      qty: data[0].qty,
+      ownership: data[0].ownership,
+      remark: data[0].remark,
+      date: data[0].date,
+      amount: data[0].amount,
+    });
+    this.allowAddProduct();
+  };
+
+  editProductInStock = async () => {
+    const data = {
+      item: this.state.item,
+      dimension: this.state.dimension,
+      description: this.state.description,
+      qty: this.state.qty,
+      ownership: this.state.ownership,
+      remark: this.state.remark,
+      date: this.state.date,
+      amount: this.state.amount,
+      isImage: this.state.itemImageType,
+      isFile: this.state.orderFileType,
+      password: this.state.password,
+    };
+    axios
+      .put(`${REACT_API_ENDPOINT}/api/stock/${this.state.editSiteId}`, data, {
+        headers: { Authorization: localStorage.getItem("token") },
+      })
+      .then(async (response) => {
+        if (response.status == 200) {
+          await this.uploadFiletoS3(response.data);
+          toast.success("Item edited successfully!!");
+          this.handleModalClose();
+          this.getAllStockData(this.props.activeSiteId);
+        }
+      })
+      .catch((error) => {
+        if (error.response.status == 401) {
+          localStorage.clear();
+          window.location.replace("/admin/login");
+        } else if (
+          error.response.status == 403 &&
+          error.response?.data?.message
+        ) {
+          toast.error(error.response.data.message);
+        } else toast.error("Error while editing item");
+        console.error("There was an error!", error);
+      });
+  };
+
   addProductInStock = async () => {
-    console.log("this.state.itemImage",this.state.itemImage)
+    console.log("this.state.itemImage", this.state.itemImage);
     const data = {
       item: this.state.item,
       dimension: this.state.dimension,
@@ -127,36 +235,32 @@ class TableList extends Component {
       date: this.state.date,
       amount: this.state.amount,
       SiteId: this.props.activeSiteId,
-      isImage: this.state.itemImage ? true : false,
-      isFile: this.state.orderFile ? true : false,
+      isImage: this.state.itemImageType,
+      isFile: this.state.orderFileType,
+      password: this.state.password,
     };
     axios
-      .post(`https://4q931ru18g.execute-api.ap-south-1.amazonaws.com/test/api/stock`, data, {
+      .post(`${REACT_API_ENDPOINT}/api/stock`, data, {
         headers: { Authorization: localStorage.getItem("token") },
       })
       .then(async (response) => {
         if (response.status == 200) {
           await this.uploadFiletoS3(response.data);
-          this.setState({
-            addNewItem: false,
-            item: "",
-            dimension: "",
-            description: "",
-            qty: "",
-            ownership: "",
-            remark: "",
-            date: new Date().toISOString().split("T")[0],
-            amount: "",
-            itemImage: null,
-            orderFile: null,
-          });
+          this.handleModalClose();
+          toast.success("Item added successfully!!");
           this.getAllStockData(this.props.activeSiteId);
-        } else if (response.status == 403) {
-          localStorage.clear();
         }
       })
       .catch((error) => {
-        this.setState({ errorMessage: error.message });
+        if (error.response.status == 401) {
+          localStorage.clear();
+          window.location.replace("/admin/login");
+        } else if (
+          error.response.status == 403 &&
+          error.response?.data?.message
+        ) {
+          toast.error(error.response.data.message);
+        } else toast.error("Error while adding item");
         console.error("There was an error!", error);
       });
   };
@@ -174,6 +278,7 @@ class TableList extends Component {
     reader.onload = function (event) {
       console.log(event.target.result);
       self.setState({
+        itemImageType: file.type.split("/")[1],
         itemImage: event.target.result,
       });
     };
@@ -187,10 +292,42 @@ class TableList extends Component {
     reader.onload = function (event) {
       console.log(event.target.result);
       self.setState({
+        orderFileType: file.type.split("/")[1],
         orderFile: event.target.result,
       });
     };
     reader.readAsArrayBuffer(file);
+  };
+
+  handleModalOpen = (type, id) => {
+    if (this.state.editSiteId !== "") {
+      this.setState({
+        openModal: true,
+        typeOfModal: "edit",
+      });
+    } else if (type == "delete") {
+      this.setState({
+        deleteSiteId: id,
+        openModal: true,
+        typeOfModal: type,
+      });
+    } else {
+      this.setState({
+        openModal: true,
+        typeOfModal: "add",
+      });
+    }
+  };
+
+  handleModalClose = () => {
+    this.setState({
+      openModal: false,
+      deleteSiteId: "",
+      typeOfModal: "",
+      openModal: false,
+      password: "",
+    });
+    this.cancleAddProduct();
   };
 
   render() {
@@ -376,15 +513,17 @@ class TableList extends Component {
                         this.state.dimension !== "" &&
                         this.state.description !== "" &&
                         this.state.qty !== "" &&
-                        this.state.ownership !== "" &&
                         this.state.remark !== ""
                           ? false
                           : true
                       }
-                      onClick={this.addProductInStock}
+                      onClick={this.handleModalOpen}
                     >
-                      ADD
+                      {this.state.editSiteId && this.state.editSiteId !== ""
+                        ? "Edit"
+                        : "Add"}
                     </Button>
+
                     <Button
                       className="btn-fill pull-right"
                       type="submit"
@@ -417,6 +556,7 @@ class TableList extends Component {
                         <th className="border-0">Qty.</th>
                         <th className="border-0">Remark</th>
                         <th className="border-0">Item Image</th>
+                        <th className="border-0">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -443,6 +583,24 @@ class TableList extends Component {
                                   <>-</>
                                 )}
                               </td>
+                              <td>
+                                <EditIcon
+                                  onClick={() => this.editItem(item.id)}
+                                  style={{
+                                    cursor: "pointer",
+                                    marginLeft: "13px",
+                                  }}
+                                />
+                                <DeleteIcon
+                                  onClick={() =>
+                                    this.handleModalOpen("delete", item.id)
+                                  }
+                                  style={{
+                                    cursor: "pointer",
+                                    marginLeft: "13px",
+                                  }}
+                                />
+                              </td>
                             </tr>
                           );
                         })}
@@ -453,6 +611,73 @@ class TableList extends Component {
             </Col>
           </Row>
         </Container>
+        <Modal
+          show={this.state.openModal}
+          onHide={this.handleModalClose}
+          // backdrop="static"
+        >
+          <Modal.Header closeButton>
+            <Modal.Title>
+              Are you sure ? If yes, Enter password.
+              <Row className="pt-3">
+                <Col className="pr-1" md="12">
+                  <Form.Group>
+                    <Form.Control
+                      placeholder="Enter Password"
+                      type="password"
+                      name="password"
+                      value={this.state.password}
+                      onChange={this.handleChange}
+                    ></Form.Control>
+                  </Form.Group>
+                </Col>
+              </Row>
+            </Modal.Title>
+          </Modal.Header>
+          <Modal.Footer>
+            {this.state.editSiteId &&
+            this.state.editSiteId !== "" &&
+            this.state.typeOfModal == "edit" ? (
+              <Button
+                variant="primary"
+                type="submit"
+                onClick={this.editProductInStock}
+              >
+                Yes, I want to edit
+              </Button>
+            ) : this.state.deleteSiteId &&
+              this.state.deleteSiteId !== "" &&
+              this.state.typeOfModal == "delete" ? (
+              <Button
+                variant="primary"
+                type="submit"
+                onClick={() =>
+                  this.deleteProductInStock(this.state.deleteSiteId)
+                }
+              >
+                Yes, I want to delete
+              </Button>
+            ) : (
+              this.state.typeOfModal == "add" && (
+                <Button
+                  variant="primary"
+                  type="submit"
+                  onClick={this.addProductInStock}
+                >
+                  Yes, I want to add
+                </Button>
+              )
+            )}
+            <Button
+              variant="danger"
+              type="submit"
+              onClick={this.handleModalClose}
+            >
+              No, I don't want to
+            </Button>
+          </Modal.Footer>
+        </Modal>
+        <ToastContainer />
       </>
     );
   }

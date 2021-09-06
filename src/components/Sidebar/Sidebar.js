@@ -1,11 +1,14 @@
 import React, { Component } from "react";
 import { withRouter } from "react-router-dom";
 
-import { Nav, Button, Form, Modal } from "react-bootstrap";
+import { Nav, Button, Form, Modal, Row, Col } from "react-bootstrap";
 
 import logo from "assets/img/reactlogo.png";
 import ajayLogo from 'assets/img/ajaylogo.png';
 import axios from "axios";
+import { REACT_API_ENDPOINT } from '../../configUrl';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 class Sidebar extends Component {
   constructor(props) {
@@ -16,6 +19,8 @@ class Sidebar extends Component {
       inChargePerson: "",
       contactNo: "",
       address: "",
+      openModal: false,
+      password: '',
     };
   }
 
@@ -43,27 +48,27 @@ class Sidebar extends Component {
       inCharge: this.state.inChargePerson,
       contact: this.state.contactNo,
       address: this.state.address,
+      password: this.state.password
     };
     axios
-      .post(`https://4q931ru18g.execute-api.ap-south-1.amazonaws.com/test/api/site`, article,
+      .post(`${REACT_API_ENDPOINT}/api/site`, article,
       { headers: { 'Authorization': localStorage.getItem("token") }})
       .then((response) => {
         if (response.status == 200) {
-          this.setState({
-            addSite: false,
-            siteName: "",
-            inChargePerson: "",
-            contactNo: "",
-            address: "",
-          });
+          this.handleModalClose();
           this.props.getAllSites();
-        } else if (response.status == 403) {
-          localStorage.clear();
-          this.props.history.push();
         }
       })
       .catch((error) => {
-        this.setState({ errorMessage: error.message });
+        if (error.response.status == 401) {
+          localStorage.clear();
+          window.location.replace("/admin/login");
+        } else if (
+          error.response.status == 403 &&
+          error.response?.data?.message
+        ) {
+          toast.error(error.response.data.message);
+        } else toast.error("Error while creating site");
         console.error("There was an error!", error);
       });
   };
@@ -76,6 +81,21 @@ class Sidebar extends Component {
 
   checkActiveSite = (id) => {
     return id == this.props.activeSiteId;
+  };
+
+  handleModalOpen = () => {
+    this.setState({
+      openModal: true,
+      addSite: false
+    });
+  };
+
+  handleModalClose = () => {
+    this.setState({
+      openModal: false,
+      password: '',
+    });
+    this.cancleAddSite();
   };
 
   render() {
@@ -240,12 +260,53 @@ class Sidebar extends Component {
               }
               type="submit"
               style={{ color: "blue" }}
-              onClick={this.addNewSite}
+              onClick={this.handleModalOpen}
             >
               ADD
             </Button>
           </Modal.Footer>
         </Modal>
+        <Modal
+          show={this.state.openModal}
+          onHide={this.handleModalClose}
+          // backdrop="static"
+        >
+          <Modal.Header closeButton>
+            <Modal.Title>
+              Are you sure to accept this order?
+              <Row className="pt-3">
+                <Col className="pr-1" md="12">
+                  <Form.Group>
+                    <Form.Control
+                      placeholder="Enter Password"
+                      type="password"
+                      name="password"
+                      value={this.state.password}
+                      onChange={this.handleChange}
+                    ></Form.Control>
+                  </Form.Group>
+                </Col>
+              </Row>
+            </Modal.Title>
+          </Modal.Header>
+          <Modal.Footer>
+            <Button
+              variant="primary"
+              type="submit"
+              onClick={this.addNewSite}
+            >
+              Yes, I want to add
+            </Button>
+            <Button
+              variant="danger"
+              type="submit"
+              onClick={this.handleModalClose}
+            >
+              No, I don't want to add
+            </Button>
+          </Modal.Footer>
+        </Modal>
+        <ToastContainer />
       </div>
     );
   }

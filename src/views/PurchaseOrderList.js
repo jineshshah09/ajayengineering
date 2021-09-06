@@ -15,6 +15,9 @@ import {
   Form,
   Modal,
 } from "react-bootstrap";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { REACT_API_ENDPOINT } from '../configUrl';
 
 class PurchaseOrderList extends Component {
   constructor(props) {
@@ -31,7 +34,7 @@ class PurchaseOrderList extends Component {
   getPurchaseOrderData = (id) => {
     axios
       .get(
-        `https://4q931ru18g.execute-api.ap-south-1.amazonaws.com/test/api/purchaseOrder/${id}`,
+        `${REACT_API_ENDPOINT}/api/purchaseOrder/${id}`,
         { headers: { Authorization: localStorage.getItem("token") } }
       )
       .then((response) => {
@@ -40,12 +43,13 @@ class PurchaseOrderList extends Component {
           this.setState({
             purchaseOrder: response.data,
           });
-        } else if (response.status == 403) {
-          localStorage.clear();
         }
       })
       .catch((error) => {
-        this.setState({ errorMessage: error.message });
+        if (error.response.status == 401) {
+          localStorage.clear();
+          window.location.replace("/admin/login");
+        }
         console.error("There was an error!", error);
       });
   };

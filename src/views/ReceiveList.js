@@ -15,12 +15,18 @@ import {
   Form,
   Modal,
 } from "react-bootstrap";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { REACT_API_ENDPOINT } from '../configUrl';
 
 class ReceiveList extends Component {
   constructor(props) {
     super();
     this.state = {
       currentOrders: [],
+      openModal: false,
+      password: '',
+      verifyIndex: ''
     };
   }
 
@@ -31,21 +37,26 @@ class ReceiveList extends Component {
   getAllStockData = () => {
     axios
       .get(
-        `https://4q931ru18g.execute-api.ap-south-1.amazonaws.com/test/api/received/${this.props.activeSiteId}`,
+        `${REACT_API_ENDPOINT}/api/received/${this.props.activeSiteId}`,
         { headers: { Authorization: localStorage.getItem("token") } }
       )
       .then((response) => {
         if (response.status == 200) {
-          console.log("testtt", response);
           this.setState({
             currentOrders: response.data,
           });
-        } else if (response.status == 403) {
-          localStorage.clear();
         }
       })
       .catch((error) => {
-        this.setState({ errorMessage: error.message });
+        if (error.response.status == 401) {
+          localStorage.clear();
+          window.location.replace("/admin/login");
+        } else if (
+          error.response.status == 403 &&
+          error.response?.data?.message
+        ) {
+          toast.error(error.response.data.message);
+        } else toast.error("Error while fetching data");
         console.error("There was an error!", error);
       });
   };
@@ -55,20 +66,50 @@ class ReceiveList extends Component {
     console.log("data", this.state.currentOrders[id]);
     axios
       .put(
-        `https://4q931ru18g.execute-api.ap-south-1.amazonaws.com/test/api/verify`,
+        `${REACT_API_ENDPOINT}/api/verify`,
         data,
         { headers: { Authorization: localStorage.getItem("token") } }
       )
       .then((response) => {
         if (response.status == 200) {
+          toast.success("Order verified successfully!!");
+          this.handleModalClose();
           this.getAllStockData();
-        } else if (response.status == 403) {
-          localStorage.clear();
         }
       })
       .catch((error) => {
-        this.setState({ errorMessage: error.message });
+        if (error.response.status == 401) {
+          localStorage.clear();
+          window.location.replace("/admin/login");
+        } else if (
+          error.response.status == 403 &&
+          error.response?.data?.message
+        ) {
+          toast.error(error.response.data.message);
+        } else toast.error("Error while verifing order")
+        console.error("There was an error!", error);
       });
+  };
+
+  handleModalOpen = (id) => {
+      this.setState({
+        openModal: true,
+        verifyIndex: id
+      });
+  };
+
+  handleModalClose = () => {
+    this.setState({
+      openModal: false,
+      password: '',
+      verifyIndex: ''
+    });
+  };
+
+  handleChange = (e) => {
+    this.setState({
+      [e.target.name]: e.target.value,
+    });
   };
 
   render() {
@@ -111,6 +152,15 @@ class ReceiveList extends Component {
                               )
                             ].name
                           }
+                          {item.challanUrl && item.challanUrl !== "" &&
+                            <a
+                              href={`https://ajayeng-assets.s3.ap-south-1.amazonaws.com/${item.challanUrl}`}
+                              target="_blank"
+                              style={{ right: "25px", position: "absolute", color: "blue" }}
+                            >
+                              View Challan
+                            </a>
+                          }
                         </Card.Title>
                       </Card.Header>
                       <Card.Body>
@@ -129,12 +179,12 @@ class ReceiveList extends Component {
                             </Col>
                             <Col className="pl-1" md="4">
                               <Form.Group>
-                                <label>Driver Licence No.</label>
+                                <label>Challan No.</label>
                                 <Form.Control
                                   type="text"
-                                  name="licenceNo"
+                                  name="challanNo"
                                   disabled={true}
-                                  value={item.driverDL}
+                                  value={item.challanNo}
                                 ></Form.Control>
                               </Form.Group>
                             </Col>
@@ -185,7 +235,7 @@ class ReceiveList extends Component {
                             className="btn-fill pull-right"
                             type="submit"
                             variant="primary"
-                            onClick={() => this.verifyOrder(index)}
+                            onClick={() => this.handleModalOpen(index)}
                           >
                             Verify
                           </Button>
@@ -200,6 +250,47 @@ class ReceiveList extends Component {
             <h3 style={{ textAlign: "center" }}>No receive orders found</h3>
           )}
         </Container>
+        <Modal
+          show={this.state.openModal}
+          onHide={this.handleModalClose}
+          // backdrop="static"
+        >
+          <Modal.Header closeButton>
+            <Modal.Title>
+              Are you sure to accept this order?
+              <Row className="pt-3">
+                <Col className="pr-1" md="12">
+                  <Form.Group>
+                    <Form.Control
+                      placeholder="Enter Password"
+                      type="password"
+                      name="password"
+                      value={this.state.password}
+                      onChange={this.handleChange}
+                    ></Form.Control>
+                  </Form.Group>
+                </Col>
+              </Row>
+            </Modal.Title>
+          </Modal.Header>
+          <Modal.Footer>
+            <Button
+              variant="primary"
+              type="submit"
+              onClick={() => this.verifyOrder(this.state.verifyIndex)}
+            >
+              Yes, I want to verify
+            </Button>
+            <Button
+              variant="danger"
+              type="submit"
+              onClick={this.handleModalClose}
+            >
+              No, I don't want to verify
+            </Button>
+          </Modal.Footer>
+        </Modal>
+        <ToastContainer />
       </>
     );
   }

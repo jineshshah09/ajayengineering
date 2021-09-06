@@ -15,6 +15,9 @@ import {
   Form,
   Modal,
 } from "react-bootstrap";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { REACT_API_ENDPOINT } from "../configUrl";
 
 class SendList extends Component {
   constructor(props) {
@@ -22,10 +25,13 @@ class SendList extends Component {
     this.state = {
       currentStocks: [],
       vehicleNo: "",
-      driverDL: "",
+      challanNo: "",
       toSite: "",
+      challanType: "",
+      challanFile: null,
       date: new Date().toISOString().split("T")[0],
       addItem: [{ item: "", dimension: "", qty: "" }],
+      password: "",
     };
   }
 
@@ -35,21 +41,27 @@ class SendList extends Component {
 
   getAllStockData = (id) => {
     axios
-      .get(
-        `https://4q931ru18g.execute-api.ap-south-1.amazonaws.com/test/api/item?siteId=${this.props.activeSiteId}`,
-        { headers: { Authorization: localStorage.getItem("token") } }
-      )
+      .get(`${REACT_API_ENDPOINT}/api/item?siteId=${this.props.activeSiteId}`, {
+        headers: { Authorization: localStorage.getItem("token") },
+      })
       .then((response) => {
         if (response.status == 200) {
           this.setState({
             currentStocks: response.data,
           });
-        } else if (response.status == 403) {
-          localStorage.clear();
         }
       })
       .catch((error) => {
-        this.setState({ errorMessage: error.message });
+        if (error.response.status == 401) {
+          localStorage.clear();
+          window.location.replace("/admin/login");
+        } else if (
+          error.response.status == 403 &&
+          error.response?.data?.message
+        ) {
+          toast.error(error.response.data.message);
+        } else toast.error("Error while fetching data");
+        console.error("There was an error!", error);
       });
   };
 
@@ -60,14 +72,14 @@ class SendList extends Component {
   };
 
   handleModalOpen = () => {
-    const { addItem, vehicleNo, driverDL, toSite } = this.state;
+    const { addItem, vehicleNo, challanNo, toSite } = this.state;
     let lastIndex = addItem.length - 1;
     if (
       addItem[lastIndex].item !== "" &&
       addItem[lastIndex].dimension !== "" &&
       addItem[lastIndex].qty !== "" &&
       vehicleNo !== "" &&
-      driverDL !== "" &&
+      challanNo !== "" &&
       toSite !== ""
     ) {
       this.setState({
@@ -79,6 +91,7 @@ class SendList extends Component {
   handleModalClose = () => {
     this.setState({
       openModal: false,
+      password: ''
     });
   };
 
@@ -120,7 +133,7 @@ class SendList extends Component {
     }
   };
 
-  saveSendOrder = () => {
+  saveSendOrder = async () => {
     let items = this.state.addItem.map((data) => {
       return {
         StockId: this.state.currentStocks[data.item].stockId[data.dimension],
@@ -131,26 +144,61 @@ class SendList extends Component {
       fromSiteId: this.props.activeSiteId,
       toSiteId: this.state.toSite,
       vehicleNo: this.state.vehicleNo,
-      driverDL: this.state.driverDL,
+      challanNo: this.state.challanNo,
+      challanType: this.state.challanType,
       date: this.state.date,
       items: items,
+      password: this.state.password,
     };
     axios
       .post(
-        `https://4q931ru18g.execute-api.ap-south-1.amazonaws.com/test/api/send`,
+        // `${REACT_API_ENDPOINT}/api/send`,
+        `${REACT_API_ENDPOINT}/api/send`,
         data,
         { headers: { Authorization: localStorage.getItem("token") } }
       )
-      .then((response) => {
+      .then(async (response) => {
         if (response.status == 200) {
+          await this.uploadFiletoS3(response.data);
+          toast.success("Send order saved successfully!!");
           this.props.changeTableOrder();
-        } else if (response.status == 403) {
-          localStorage.clear();
         }
       })
       .catch((error) => {
-        this.setState({ errorMessage: error.message });
+        if (error.response.status == 401) {
+          localStorage.clear();
+          window.location.replace("/admin/login");
+        } else if (
+          error.response.status == 403 &&
+          error.response?.data?.message
+        ) {
+          toast.error(error.response.data.message);
+        } else toast.error("Error while saving send order");
+        console.error("There was an error!", error);
       });
+  };
+
+  handleAttachChallan = (e) => {
+    var file = e.target.files[0];
+    var reader = new FileReader();
+    let self = this;
+    reader.onload = function (event) {
+      console.log(event.target.result);
+      self.setState({
+        challanFile: event.target.result,
+        challanType: file.type.split("/")[1],
+      });
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  uploadFiletoS3 = async (res) => {
+    if (res.challanUploadUrl) {
+      const result = await fetch(res.challanUploadUrl, {
+        method: "PUT",
+        body: this.state.challanFile,
+      });
+    }
   };
 
   render() {
@@ -212,7 +260,7 @@ class SendList extends Component {
                 <Card.Body>
                   <Form>
                     <Row>
-                      <Col className="pr-1" md="4">
+                      <Col className="pr-1" md="3">
                         <Form.Group>
                           <label>Vehical No.</label>
                           <Form.Control
@@ -223,18 +271,18 @@ class SendList extends Component {
                           ></Form.Control>
                         </Form.Group>
                       </Col>
-                      <Col className="pl-1" md="4">
+                      <Col className="pl-1" md="3">
                         <Form.Group>
-                          <label>Driver Licence No.</label>
+                          <label>Challan No.</label>
                           <Form.Control
                             type="text"
-                            name="driverDL"
-                            value={this.state.driverDL}
+                            name="challanNo"
+                            value={this.state.challanNo}
                             onChange={this.handleChange}
                           ></Form.Control>
                         </Form.Group>
                       </Col>
-                      <Col className="pl-1" md="4">
+                      <Col className="pl-1" md="3">
                         <Form.Group>
                           <label>Date</label>
                           <Form.Control
@@ -242,6 +290,17 @@ class SendList extends Component {
                             name="date"
                             value={this.state.date}
                             onChange={this.handleChange}
+                          ></Form.Control>
+                        </Form.Group>
+                      </Col>
+                      <Col className="pl-1" md="3">
+                        <Form.Group>
+                          <label>Challan</label>
+                          <Form.Control
+                            placeholder="Upload Challan"
+                            type="file"
+                            name="challanFile"
+                            onChange={this.handleAttachChallan}
                           ></Form.Control>
                         </Form.Group>
                       </Col>
@@ -389,6 +448,19 @@ class SendList extends Component {
                   )
                 ].name}{" "}
               ?
+              <Row className="pt-3">
+                <Col className="pr-1" md="12">
+                  <Form.Group>
+                    <Form.Control
+                      placeholder="Enter Password"
+                      type="password"
+                      name="password"
+                      value={this.state.password}
+                      onChange={this.handleChange}
+                    ></Form.Control>
+                  </Form.Group>
+                </Col>
+              </Row>
             </Modal.Title>
           </Modal.Header>
           <Modal.Footer>
@@ -408,6 +480,7 @@ class SendList extends Component {
             </Button>
           </Modal.Footer>
         </Modal>
+        <ToastContainer />
       </>
     );
   }

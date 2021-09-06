@@ -26,6 +26,7 @@ import TableList from "views/TableList";
 import SendList from "views/SendList";
 import PurchaseOrderList from "views/PurchaseOrderList";
 import axios from "axios";
+import { REACT_API_ENDPOINT } from '../configUrl';
 
 class Admin extends Component {
   constructor(props) {
@@ -48,7 +49,7 @@ class Admin extends Component {
   getAllSites = () => {
     axios
       .get(
-        `https://4q931ru18g.execute-api.ap-south-1.amazonaws.com/test/api/site`,
+        `${REACT_API_ENDPOINT}/api/site`,
         { headers: { Authorization: localStorage.getItem("token") } }
       )
       .then((response) => {
