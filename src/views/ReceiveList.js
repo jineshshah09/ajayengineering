@@ -62,7 +62,7 @@ class ReceiveList extends Component {
   };
 
   verifyOrder = (id) => {
-    let data = this.state.currentOrders[id];
+    let data = { ...this.state.currentOrders[id], "password": this.state.password };
     console.log("data", this.state.currentOrders[id]);
     axios
       .put(

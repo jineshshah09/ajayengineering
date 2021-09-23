@@ -27,6 +27,8 @@ import SendList from "views/SendList";
 import PurchaseOrderList from "views/PurchaseOrderList";
 import axios from "axios";
 import { REACT_API_ENDPOINT } from '../configUrl';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 class Admin extends Component {
   constructor(props) {
@@ -68,7 +70,15 @@ class Admin extends Component {
         }
       })
       .catch((error) => {
-        this.setState({ errorMessage: error.message });
+        if (error?.response?.status == 401) {
+          localStorage.clear();
+          window.location.replace("/admin/login");
+        } else if (
+          error?.response?.status == 403 &&
+          error.response?.data?.message
+        ) {
+          toast.error(error.response.data.message);
+        }
         console.error("There was an error!", error);
       });
   };

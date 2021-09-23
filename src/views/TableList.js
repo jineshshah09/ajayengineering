@@ -86,6 +86,9 @@ class TableList extends Component {
       })
       .then((response) => {
         if (response.status == 200) {
+          if(response.data.length > 0){
+            response.data.sort((a, b) => a.item.localeCompare(b.item));
+          }
           this.setState({
             currentItems: response.data,
           });
@@ -140,8 +143,8 @@ class TableList extends Component {
       password: this.state.password,
     };
     axios
-      .delete(`${REACT_API_ENDPOINT}/api/stock/${id}`, data, {
-        headers: { Authorization: localStorage.getItem("token") },
+      .delete(`${REACT_API_ENDPOINT}/api/stock/${id}`, {
+        headers: { Authorization: localStorage.getItem("token") }, data
       })
       .then(async (response) => {
         if (response.status == 200) {

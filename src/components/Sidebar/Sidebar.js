@@ -60,11 +60,11 @@ class Sidebar extends Component {
         }
       })
       .catch((error) => {
-        if (error.response.status == 401) {
+        if (error?.response?.status == 401) {
           localStorage.clear();
           window.location.replace("/admin/login");
         } else if (
-          error.response.status == 403 &&
+          error?.response?.status == 403 &&
           error.response?.data?.message
         ) {
           toast.error(error.response.data.message);
@@ -273,7 +273,7 @@ class Sidebar extends Component {
         >
           <Modal.Header closeButton>
             <Modal.Title>
-              Are you sure to accept this order?
+              Are you sure to add this site?
               <Row className="pt-3">
                 <Col className="pr-1" md="12">
                   <Form.Group>
