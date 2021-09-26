@@ -230,16 +230,18 @@ class ReceiveList extends Component {
                               })}
                           </tbody>
                         </Table>
-                        <div class="col-auto">
-                          <Button
-                            className="btn-fill pull-right"
-                            type="submit"
-                            variant="primary"
-                            onClick={() => this.handleModalOpen(index)}
-                          >
-                            Verify
-                          </Button>
+                        {item.status !== "received" &&
+                          <div class="col-auto">
+                            <Button
+                              className="btn-fill pull-right"
+                              type="submit"
+                              variant="primary"
+                              onClick={() => this.handleModalOpen(index)}
+                            >
+                              Verify
+                            </Button>
                         </div>
+                        }
                       </Card.Footer>
                     </Card>
                   </Col>

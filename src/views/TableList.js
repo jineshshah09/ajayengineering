@@ -20,6 +20,11 @@ import "react-toastify/dist/ReactToastify.css";
 import DeleteIcon from "@material-ui/icons/Delete";
 import EditIcon from "@material-ui/icons/Edit";
 import { REACT_API_ENDPOINT } from "../configUrl";
+import ReactExport from "react-export-excel";
+
+const ExcelFile = ReactExport.ExcelFile;
+const ExcelSheet = ReactExport.ExcelFile.ExcelSheet;
+const ExcelColumn = ReactExport.ExcelFile.ExcelColumn;
 
 class TableList extends Component {
   constructor(props) {
@@ -375,6 +380,30 @@ class TableList extends Component {
               >
                 Purchase Order
               </Button>
+              {this.state.currentItems &&
+              this.state.currentItems.length > 0 && (
+                <ExcelFile 
+                  filename={this.props.siteList.filter(item => parseInt(item.id) == parseInt(this.props.activeSiteId))[0].name + '_stocks'}
+                  element={
+                    <Button
+                      className="btn-fill pull-right"
+                      type="submit"
+                      variant="success"
+                      style={{ marginRight: "10px", float: "right" }}
+                    >
+                      Download Stocks
+                    </Button>
+                  }
+                >
+                  <ExcelSheet data={this.state.currentItems} name={this.props.siteList.filter(item => parseInt(item.id) == parseInt(this.props.activeSiteId))[0].name}>
+                    <ExcelColumn label="Item Name" value="item"/>
+                    <ExcelColumn label="Dimension" value="dimension"/>
+                    <ExcelColumn label="Description" value="description"/>
+                    <ExcelColumn label="Qty." value="qty"/>
+                    <ExcelColumn label="Remark" value="remark"/>
+                  </ExcelSheet>
+                </ExcelFile>
+              )}
             </div>
           )}
           {this.state.addNewItem && (
@@ -430,6 +459,7 @@ class TableList extends Component {
                             name="qty"
                             value={this.state.qty}
                             onChange={this.handleChange}
+                            disabled={this.state.editSiteId && this.state.editSiteId !== "" ? true : false}
                           ></Form.Control>
                         </Form.Group>
                       </Col>

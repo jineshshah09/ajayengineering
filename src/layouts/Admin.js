@@ -149,6 +149,7 @@ class Admin extends Component {
               !this.state.showSendOrder && (
                 <TableList
                   activeSiteId={this.state.activeSiteId}
+                  siteList={this.state.siteList}
                   changeReceiveOrder={this.changeReceiveOrder}
                   changeSendOrder={this.changeSendOrder}
                   changePurchaseOrder={this.changePurchaseOrder}

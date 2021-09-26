@@ -1,1 +1,1 @@
-export const REACT_API_ENDPOINT = "https://4q931ru18g.execute-api.ap-south-1.amazonaws.com/test";
+export const REACT_API_ENDPOINT = "http://localhost:5000";
