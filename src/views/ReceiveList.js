@@ -43,7 +43,7 @@ class ReceiveList extends Component {
       .then((response) => {
         if (response.status == 200) {
           this.setState({
-            currentOrders: response.data,
+            currentOrders: response.data.reverse(),
           });
         }
       })

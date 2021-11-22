@@ -245,7 +245,7 @@ class SendList extends Component {
                             <option value=""></option>
                             {this.props.siteList &&
                               this.props.siteList.map((site) => {
-                                if (this.props.activeSiteId !== site.id) {
+                                if (this.props.activeSiteId !== site.id && !site.isDeleted) {
                                   return (
                                     <option value={site.id}>{site.name}</option>
                                   );

@@ -21,6 +21,9 @@ class Sidebar extends Component {
       address: "",
       openModal: false,
       password: '',
+      deleteSitePopup: false,
+      deleteSiteName: '',
+      typeOfTransaction: ''
     };
   }
 
@@ -56,7 +59,9 @@ class Sidebar extends Component {
       .then((response) => {
         if (response.status == 200) {
           this.handleModalClose();
+          this.cancleAddSite();
           this.props.getAllSites();
+          toast.error("Site added successfully!!");
         }
       })
       .catch((error) => {
@@ -73,6 +78,37 @@ class Sidebar extends Component {
       });
   };
 
+  deleteExistingSite = () => {
+    const data = {
+      password: this.state.password,
+    };
+    axios
+      .delete(`${REACT_API_ENDPOINT}/api/site/${this.state.deleteSiteName}`, {
+        headers: { Authorization: localStorage.getItem("token") },
+        data,
+      })
+      .then((response) => {
+        if (response.status == 200) {
+          this.handleModalClose();
+          this.setState({ deleteSiteName: '', deleteSitePopup: false })
+          this.props.getAllSites();
+          toast.success("Site deleted successfully!!");
+        }
+      })
+      .catch((error) => {
+        if (error?.response?.status == 401) {
+          localStorage.clear();
+          window.location.replace("/admin/login");
+        } else if (
+          error?.response?.status == 403 &&
+          error.response?.data?.message
+        ) {
+          toast.error(error.response.data.message);
+        } else toast.error("Error while deleting site");
+        console.error("There was an error!", error);
+      });
+  }
+
   handleChange = (e) => {
     this.setState({
       [e.target.name]: e.target.value,
@@ -83,10 +119,12 @@ class Sidebar extends Component {
     return id == this.props.activeSiteId;
   };
 
-  handleModalOpen = () => {
+  handleModalOpen = (type) => {
     this.setState({
       openModal: true,
-      addSite: false
+      addSite: false,
+      deleteSitePopup: false,
+      typeOfTransaction: type
     });
   };
 
@@ -94,8 +132,8 @@ class Sidebar extends Component {
     this.setState({
       openModal: false,
       password: '',
+      typeOfTransaction: ''
     });
-    this.cancleAddSite();
   };
 
   render() {
@@ -160,7 +198,7 @@ class Sidebar extends Component {
             {this.props.siteList &&
               this.props.siteList.length > 0 &&
               this.props.siteList.map((prop, key) => {
-                if (!prop.redirect)
+                if (!prop.redirect && !prop.isDeleted)
                   return (
                     <li
                       style={{
@@ -191,6 +229,24 @@ class Sidebar extends Component {
                 + ADD NEW SITE
               </Button>
             </li>
+            {this.props.siteList &&
+            this.props.siteList.length > 0 &&
+              <li className="active active-pro">
+                <Button
+                  type="submit"
+                  variant="secondary"
+                  style={{ color: "white", marginTop: "15px" }}
+                  onClick={() => {
+                    this.setState({
+                      deleteSitePopup: true,
+                      deleteSiteName: ''
+                    })
+                  }}
+                >
+                  DELETE SITE
+                </Button>
+              </li>
+            }
           </ul>
         </div>
         <Modal
@@ -260,7 +316,7 @@ class Sidebar extends Component {
               }
               type="submit"
               style={{ color: "blue" }}
-              onClick={this.handleModalOpen}
+              onClick={() => this.handleModalOpen("add_site")}
             >
               ADD
             </Button>
@@ -273,7 +329,11 @@ class Sidebar extends Component {
         >
           <Modal.Header closeButton>
             <Modal.Title>
-              Are you sure to add this site?
+              {this.state.typeOfTransaction == "delete_site" ? 
+                "Are you sure to delete this site?"
+              : this.state.typeOfTransaction == "add_site" && 
+                "Are you sure to add this site?"
+              }
               <Row className="pt-3">
                 <Col className="pr-1" md="12">
                   <Form.Group>
@@ -290,19 +350,87 @@ class Sidebar extends Component {
             </Modal.Title>
           </Modal.Header>
           <Modal.Footer>
-            <Button
-              variant="primary"
-              type="submit"
-              onClick={this.addNewSite}
-            >
-              Yes, I want to add
-            </Button>
+            {this.state.typeOfTransaction == "delete_site" ? 
+              <Button
+                variant="primary"
+                type="submit"
+                onClick={this.deleteExistingSite}
+                style={{  }}
+              >
+                Yes, I want to delete
+              </Button>
+            : this.state.typeOfTransaction == "add_site" && 
+              <Button
+                variant="primary"
+                type="submit"
+                onClick={this.addNewSite}
+              >
+               Yes, I want to add
+              </Button>
+            }
             <Button
               variant="danger"
               type="submit"
               onClick={this.handleModalClose}
             >
-              No, I don't want to add
+              {this.state.typeOfTransaction == "delete_site" ? 
+                "No, I don't want to delete"
+              : this.state.typeOfTransaction == "add_site" && 
+                "No, I don't want to add"
+              }
+            </Button>
+          </Modal.Footer>
+        </Modal>
+        <Modal
+          show={this.state.deleteSitePopup}
+          onHide={() => { this.setState({ deleteSitePopup: false, deleteSiteName: '' }) }}
+        >
+          <Modal.Header closeButton>
+            <Modal.Title>DELETE EXISTING SITE</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <Form.Group>
+              <Form.Label>Please select site Name to delete: </Form.Label>
+              <Form.Control
+                as="select"
+                value={this.state.deleteSiteName}
+                name="item"
+                onChange={(e) => {
+                  this.setState({ deleteSiteName: e.target.value })
+                }}
+              >
+                <option value=""></option>
+                {this.props.siteList &&
+                this.props.siteList.length > 0 &&
+                  this.props.siteList.map(
+                    (site) => {
+                      return (
+                        <option value={site.id}>
+                          {site.name}
+                        </option>
+                      );
+                    }
+                  )}
+              </Form.Control>
+            </Form.Group>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button
+              variant="danger"
+              type="submit"
+              style={{ color: "red" }}
+              onClick={() => this.handleModalOpen("delete_site")}
+              disabled={this.state.deleteSiteName !== "" ? false : true}
+            >
+              DELETE
+            </Button>
+            <Button
+              variant="primary"
+              type="submit"
+              style={{ color: "blue" }}
+              onClick={() => { this.setState({ deleteSitePopup: false, deleteSiteName: '' }) }}
+            >
+              CANCLE
             </Button>
           </Modal.Footer>
         </Modal>
