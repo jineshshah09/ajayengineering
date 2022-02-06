@@ -63,6 +63,13 @@ class Login extends Component {
     });
   };
 
+  onKeyDown = (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      this.login();
+    }
+  }
+
   render() {
     return (
       <div style={{ backgroundColor: "aliceblue" }}>
@@ -97,6 +104,7 @@ class Login extends Component {
                           name="password"
                           value={this.state.password}
                           onChange={this.handleChange}
+                          onKeyDown={this.onKeyDown}
                         ></Form.Control>
                       </Form.Group>
                     </Col>

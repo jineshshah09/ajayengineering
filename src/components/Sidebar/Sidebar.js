@@ -45,6 +45,19 @@ class Sidebar extends Component {
     });
   };
 
+  onKeyDown = (event) => {
+    if (event.key === 'Enter') {
+      if(this.state.typeOfTransaction == "delete_site"){
+        event.preventDefault();
+        this.deleteExistingSite();
+      }
+      if(this.state.typeOfTransaction == "add_site"){
+        event.preventDefault();
+        this.addNewSite();
+      }
+    }
+  }
+
   addNewSite = () => {
     const article = {
       name: this.state.siteName,
@@ -343,6 +356,7 @@ class Sidebar extends Component {
                       name="password"
                       value={this.state.password}
                       onChange={this.handleChange}
+                      onKeyDown={this.onKeyDown}
                     ></Form.Control>
                   </Form.Group>
                 </Col>

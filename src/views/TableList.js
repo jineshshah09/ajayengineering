@@ -14,7 +14,7 @@ import {
   Col,
   Form,
   Modal,
-  Spinner
+  Spinner,
 } from "react-bootstrap";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -77,8 +77,10 @@ class TableList extends Component {
       itemManual: "",
       dimensionManual: "",
       detailsId: "",
+      detailsName: "",
+      detailsDimension: "",
       itemDetailsData: [],
-      loading: false
+      loading: false,
     };
   }
 
@@ -89,7 +91,7 @@ class TableList extends Component {
   };
 
   uploadFiletoS3 = async (res) => {
-    if(this.state.typeOfModal == "add_single"){
+    if (this.state.typeOfModal == "add_single") {
       if (res[0].imageUploadUrl) {
         const result = await fetch(res[0].imageUploadUrl, {
           method: "PUT",
@@ -103,8 +105,8 @@ class TableList extends Component {
         });
       }
     }
-    if(this.state.typeOfModal == "add_multiple"){
-      for(var i = 0; i < res.length; i++){
+    if (this.state.typeOfModal == "add_multiple") {
+      for (var i = 0; i < res.length; i++) {
         if (res[i].imageUploadUrl) {
           const result = await fetch(res[i].imageUploadUrl, {
             method: "PUT",
@@ -196,8 +198,7 @@ class TableList extends Component {
       ],
       typeOfOrderPurchased: 0,
       itemManual: "",
-      dimensionManual: "",
-      currentStocks: [],
+      dimensionManual: ""
     });
   };
 
@@ -294,16 +295,21 @@ class TableList extends Component {
     // this.setState({
     //   loading: true
     // });
-    console.log("this.state.itemImage", this.state.itemImage);
     let data;
-    if(this.state.typeOfModal == "add_single"){
+    if (this.state.typeOfModal == "add_single") {
       data = {
         isPurchaseOrder: true,
         password: this.state.password,
         items: [
           {
-            item: this.state.item == "Others" ? this.state.itemManual : this.state.item,
-            dimension: this.state.dimension == "Others" ? this.state.dimensionManual : this.state.dimension,
+            item:
+              this.state.item == "Others"
+                ? this.state.itemManual
+                : this.state.currentStocks[this.state.item].item,
+            dimension:
+              this.state.dimension == "Others"
+                ? this.state.dimensionManual
+                : this.state.currentStocks[this.state.item].dimension[this.state.dimension],
             description: this.state.description,
             qty: this.state.qty,
             ownership: this.state.ownership,
@@ -312,17 +318,23 @@ class TableList extends Component {
             amount: this.state.amount,
             SiteId: this.props.activeSiteId,
             isImage: this.state.itemImageType,
-            isFile: this.state.orderFileType
-          }
-        ]
+            isFile: this.state.orderFileType,
+          },
+        ],
       };
     }
-    if(this.state.typeOfModal == "add_multiple"){
+    if (this.state.typeOfModal == "add_multiple") {
       let itemsData = [];
-      for(var i = 0; i < this.state.repeatItem.length; i++){
+      for (var i = 0; i < this.state.repeatItem.length; i++) {
         let data = {
-          item: this.state.repeatItem[i].item == "Others" ? this.state.repeatItem[i].itemManual : this.state.repeatItem[i].item,
-          dimension: this.state.repeatItem[i].dimension == "Others" ? this.state.repeatItem[i].dimensionManual : this.state.repeatItem[i].dimension,
+          item:
+            this.state.repeatItem[i].item == "Others"
+              ? this.state.repeatItem[i].itemManual
+              : this.state.currentStocks[this.state.repeatItem[i].item].item,
+          dimension:
+            this.state.repeatItem[i].dimension == "Others"
+              ? this.state.repeatItem[i].dimensionManual
+              : this.state.currentStocks[this.state.repeatItem[i].item].dimension[this.state.repeatItem[i].dimension],
           description: this.state.repeatItem[i].description,
           qty: this.state.repeatItem[i].qty,
           ownership: this.state.repeatItem[i].ownership,
@@ -331,17 +343,16 @@ class TableList extends Component {
           amount: "",
           SiteId: this.props.activeSiteId,
           isImage: this.state.repeatItem[i].itemImageType,
-          isFile: ""
+          isFile: "",
         };
         itemsData.push(data);
       }
       data = {
         isPurchaseOrder: false,
         password: this.state.password,
-        items: itemsData
+        items: itemsData,
       };
     }
-    console.log("datadatadata",data)
     axios
       .post(`${REACT_API_ENDPOINT}/api/stock`, data, {
         headers: { Authorization: localStorage.getItem("token") },
@@ -352,6 +363,7 @@ class TableList extends Component {
           this.handleModalClose();
           toast.success("Item added successfully!!");
           this.getAllStockData(this.props.activeSiteId);
+          this.getCurrentUniqueStockData(this.props.activeSiteId);
         }
       })
       .catch((error) => {
@@ -467,7 +479,7 @@ class TableList extends Component {
       typeOfModal: "",
       openModal: false,
       password: "",
-      loading: false
+      loading: false,
     });
     this.cancleAddProduct();
   };
@@ -544,24 +556,72 @@ class TableList extends Component {
   };
 
   openDetails = (id) => {
+    let data = this.state.filteredCurrentItems.filter((item) => item.id == id);
     this.setState({
       detailsId: id,
+      detailsName: data[0].item,
+      detailsDimension: data[0].dimension,
     });
+    axios
+      .get(`${REACT_API_ENDPOINT}/api/transaction/${id}`, {
+        headers: { Authorization: localStorage.getItem("token") },
+      })
+      .then((response) => {
+        if (response.status == 200) {
+          this.setState({
+            itemDetailsData: response.data,
+          });
+        }
+      })
+      .catch((error) => {
+        // if (error.response.status == 401) {
+        //   localStorage.clear();
+        //   window.location.replace("/admin/login");
+        // } else if (
+        //   error.response.status == 403 &&
+        //   error.response?.data?.message
+        // ) {
+        //   toast.error(error.response.data.message);
+        // } else toast.error("Error while fetching stock");
+        console.error("There was an error!", error.response);
+      });
+  };
+
+  onKeyDown = (event) => {
+    if (event.key === 'Enter') {
+      if(this.state.editSiteId &&
+        this.state.editSiteId !== "" &&
+        this.state.typeOfModal == "edit"){
+          this.editProductInStock();
+      }else if(this.state.deleteSiteId &&
+        this.state.deleteSiteId !== "" &&
+        this.state.typeOfModal == "delete"){
+          this.deleteProductInStock(this.state.deleteSiteId)
+      }else if(this.state.typeOfModal == "add_single" ||
+        this.state.typeOfModal == "add_multiple"){
+        this.addProductInStock();
+      }
+      event.preventDefault();
+    }
   };
 
   render() {
     return (
       <>
-        {this.state.loading &&
-        <div>
-          <Spinner 
-            style={{ position: "fixed", top: "50%", left: "50%", zIndex: 9999 }} 
-            animation="border" 
-            role="status"
-          >
-          </Spinner>
+        {this.state.loading && (
+          <div>
+            <Spinner
+              style={{
+                position: "fixed",
+                top: "50%",
+                left: "50%",
+                zIndex: 9999,
+              }}
+              animation="border"
+              role="status"
+            ></Spinner>
           </div>
-        }
+        )}
         <Container fluid>
           <br />
           {this.props.activeSiteId !== "" && (
@@ -610,7 +670,14 @@ class TableList extends Component {
                     className="btn-fill pull-right"
                     type="submit"
                     variant="secondary"
-                    onClick={() => this.setState({ detailsId: "" })}
+                    onClick={() =>
+                      this.setState({
+                        detailsId: "",
+                        detailsName: "",
+                        detailsDimension: "",
+                        itemDetailsData: [],
+                      })
+                    }
                     style={{ marginLeft: "10px" }}
                   >
                     Back to Current Stocks
@@ -621,11 +688,13 @@ class TableList extends Component {
               {this.state.filteredCurrentItems &&
                 this.state.filteredCurrentItems.length > 0 && (
                   <ExcelFile
-                    filename={
+                    filename={this.state.detailsId == "" ?
                       this.props.siteList.filter(
                         (item) =>
                           parseInt(item.id) == parseInt(this.props.activeSiteId)
                       )[0].name + "_stocks"
+                    : this.state.detailsId !== "" &&
+                      "Transactions_of_" + this.state.detailsName + "[" + this.state.detailsDimension + "]"
                     }
                     element={
                       <Button
@@ -638,26 +707,40 @@ class TableList extends Component {
                       </Button>
                     }
                   >
-                    <ExcelSheet
-                      data={
-                        this.state.detailsId !== ""
-                          ? this.state.itemDetailsData
-                          : this.state.filteredCurrentItems
-                      }
-                      name={
-                        this.props.siteList.filter(
-                          (item) =>
-                            parseInt(item.id) ==
-                            parseInt(this.props.activeSiteId)
-                        )[0].name
-                      }
-                    >
-                      <ExcelColumn label="Item Name" value="item" />
-                      <ExcelColumn label="Dimension" value="dimension" />
-                      <ExcelColumn label="Description" value="description" />
-                      <ExcelColumn label="Qty." value="qty" />
-                      <ExcelColumn label="Remark" value="remark" />
-                    </ExcelSheet>
+                    {this.state.detailsId == "" ? (
+                      <ExcelSheet
+                        data={this.state.filteredCurrentItems}
+                        name={
+                          this.props.siteList.filter(
+                            (item) =>
+                              parseInt(item.id) ==
+                              parseInt(this.props.activeSiteId)
+                          )[0].name
+                        }
+                      >
+                        <ExcelColumn label="Item Name" value="item" />
+                        <ExcelColumn label="Dimension" value="dimension" />
+                        <ExcelColumn label="Description" value="description" />
+                        <ExcelColumn label="Qty." value="qty" />
+                        <ExcelColumn label="Remark" value="remark" />
+                      </ExcelSheet>
+                    ) : (
+                      this.state.detailsId !== "" && (
+                        <ExcelSheet
+                          data={this.state.itemDetailsData}
+                          name={this.state.detailsName}
+                        >
+                          <ExcelColumn label="Transaction Type" value="type" />
+                          <ExcelColumn label="From/To Site" value="fromToSiteId" />
+                          <ExcelColumn
+                            label="Date"
+                            value="date"
+                          />
+                          <ExcelColumn label="Qty." value="qty" />
+                          <ExcelColumn label="Remark" value="remark" />
+                        </ExcelSheet>
+                      )
+                    )}
                   </ExcelFile>
                 )}
             </div>
@@ -1308,7 +1391,7 @@ class TableList extends Component {
                                 <td>
                                   <p
                                     style={{ cursor: "pointer" }}
-                                    // onClick={() => this.openDetails(item.id)}
+                                    onClick={() => this.openDetails(item.id)}
                                   >
                                     {item.item}
                                   </p>
@@ -1365,7 +1448,10 @@ class TableList extends Component {
                       <Card.Title>
                         <Row>
                           <Col className="pr-1" md="7">
-                            <h4 style={{ marginTop: "0px" }}>Transactions</h4>
+                            <h4 style={{ marginTop: "0px" }}>
+                              Transactions of {this.state.detailsName} [{" "}
+                              {this.state.detailsDimension} ]
+                            </h4>
                           </Col>
                         </Row>
                       </Card.Title>
@@ -1374,45 +1460,54 @@ class TableList extends Component {
                       <Table className="table-hover table-striped">
                         <thead>
                           <tr>
-                            <th className="border-0">ID</th>
-                            <th className="border-0">Item Name</th>
-                            <th className="border-0">Dimension</th>
-                            <th className="border-0">Description</th>
+                            <th className="border-0">Serial No.</th>
+                            <th className="border-0">Transaction Type</th>
+                            <th className="border-0">From/To Site</th>
                             <th className="border-0">Qty.</th>
+                            <th className="border-0">Date</th>
                             <th className="border-0">Remark</th>
-                            <th className="border-0">Item Image</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {this.state.filteredCurrentItems &&
-                            this.state.filteredCurrentItems.length > 0 &&
-                            this.state.filteredCurrentItems.map((item, i) => {
+                          {this.state.itemDetailsData &&
+                            this.state.itemDetailsData.length > 0 &&
+                            this.state.itemDetailsData.map((item, i) => {
                               return (
                                 <tr>
                                   <td>{i + 1}</td>
+                                  <td>{item.type ? item.type : "-"}</td>
                                   <td>
-                                    <p
-                                      style={{ cursor: "pointer" }}
-                                      onClick={() => this.openDetails(item.id)}
-                                    >
-                                      {item.item}
-                                    </p>
+                                    {item.fromToSiteId
+                                      ? this.props.siteList.filter(
+                                          (itemDetails) =>
+                                            parseInt(item.fromToSiteId) ==
+                                            parseInt(itemDetails.id)
+                                        )[0].name
+                                      : "-"}
                                   </td>
-                                  <td>{item.dimension}</td>
-                                  <td>{item.description}</td>
-                                  <td>{item.qty}</td>
-                                  <td>{item.remark && item.remark}</td>
+                                  <td
+                                    style={
+                                      item.type &&
+                                      item.type == "Sent"
+                                        ? { color: "red" }
+                                        : {
+                                            color: "green",
+                                          }
+                                    }
+                                  >
+                                    {item.type &&
+                                    item.type == "Sent"
+                                      ? `-${item.qty}`
+                                      : item.qty
+                                    }
+                                  </td>
+                                  <td>{item.date ? item.date : "-"}</td>
                                   <td>
-                                    {item.imageUploadUrl ? (
-                                      <a
-                                        href={`https://ajayeng-assets.s3.ap-south-1.amazonaws.com/${item.imageUploadUrl}`}
-                                        target="_blank"
-                                      >
-                                        View Image
-                                      </a>
-                                    ) : (
-                                      <>-</>
-                                    )}
+                                    {item.type && item.type == "Add"
+                                      ? item.remark
+                                      : item.type && item.type !== "Add"
+                                      ? `CHALLAN NO : ${item.remark}`
+                                      : "-"}
                                   </td>
                                 </tr>
                               );
@@ -1443,6 +1538,7 @@ class TableList extends Component {
                       name="password"
                       value={this.state.password}
                       onChange={this.handleChange}
+                      onKeyDown={this.onKeyDown}
                     ></Form.Control>
                   </Form.Group>
                 </Col>

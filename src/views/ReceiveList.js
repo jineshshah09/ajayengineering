@@ -14,6 +14,7 @@ import {
   Col,
   Form,
   Modal,
+  Spinner
 } from "react-bootstrap";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -26,7 +27,8 @@ class ReceiveList extends Component {
       currentOrders: [],
       openModal: false,
       password: '',
-      verifyIndex: ''
+      verifyIndex: '',
+      loading: false
     };
   }
 
@@ -62,8 +64,8 @@ class ReceiveList extends Component {
   };
 
   verifyOrder = (id) => {
+    this.setState({ loading: true, openModal: false });
     let data = { ...this.state.currentOrders[id], "password": this.state.password };
-    console.log("data", this.state.currentOrders[id]);
     axios
       .put(
         `${REACT_API_ENDPOINT}/api/verify`,
@@ -88,6 +90,7 @@ class ReceiveList extends Component {
           toast.error(error.response.data.message);
         } else toast.error("Error while verifing order")
         console.error("There was an error!", error);
+        this.setState({ loading: false });
       });
   };
 
@@ -102,7 +105,8 @@ class ReceiveList extends Component {
     this.setState({
       openModal: false,
       password: '',
-      verifyIndex: ''
+      verifyIndex: '',
+      loading: false
     });
   };
 
@@ -112,11 +116,24 @@ class ReceiveList extends Component {
     });
   };
 
+  onKeyDown = (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      this.verifyOrder(this.state.verifyIndex)
+    }
+  }
+
   render() {
     return (
       <>
         <Container fluid>
           <br />
+          {this.state.loading &&
+            <div style={{ position: "fixed", top: "0", left: "0", background: "#666", opacity: "0.8", zIndex: "998", height: "100%", width: "100%" }}>
+              <Spinner animation="border" style={{ position: "absolute", left: "50%", top:"50%" }}/>
+            </div>
+          }
+          
           {this.props.activeSiteId !== "" && (
             <div style={{ marginBottom: "10px" }}>
               <Button
@@ -269,6 +286,7 @@ class ReceiveList extends Component {
                       name="password"
                       value={this.state.password}
                       onChange={this.handleChange}
+                      onKeyDown={this.onKeyDown}
                     ></Form.Control>
                   </Form.Group>
                 </Col>

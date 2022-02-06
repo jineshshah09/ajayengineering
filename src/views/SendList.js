@@ -201,6 +201,13 @@ class SendList extends Component {
     }
   };
 
+  onKeyDown = (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      this.saveSendOrder();
+    }
+  }
+
   render() {
     return (
       <>
@@ -457,6 +464,7 @@ class SendList extends Component {
                       name="password"
                       value={this.state.password}
                       onChange={this.handleChange}
+                      onKeyDown={this.onKeyDown}
                     ></Form.Control>
                   </Form.Group>
                 </Col>
