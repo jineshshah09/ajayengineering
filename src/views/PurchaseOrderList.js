@@ -109,7 +109,7 @@ class PurchaseOrderList extends Component {
                               <td>
                                 {item.fileUploadUrl ? (
                                   <a
-                                    href={`https://ajayeng-assets.s3.ap-south-1.amazonaws.com/${item.fileUploadUrl}`}
+                                    href={`https://ajayeng-assets-prd.s3.ap-south-1.amazonaws.com/${item.fileUploadUrl}`}
                                     target="_blank"
                                   >
                                     View File
