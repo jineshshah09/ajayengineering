@@ -171,7 +171,7 @@ class ReceiveList extends Component {
                           }
                           {item.challanUrl && item.challanUrl !== "" &&
                             <a
-                              href={`https://ajayeng-assets.s3.ap-south-1.amazonaws.com/${item.challanUrl}`}
+                              href={`https://ajayeng-assets-prd.s3.ap-south-1.amazonaws.com/${item.challanUrl}`}
                               target="_blank"
                               style={{ right: "25px", position: "absolute", color: "blue" }}
                             >
